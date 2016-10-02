@@ -1,0 +1,17 @@
+{
+  "name": "NodejsStarterApp",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "async": "^2.0.1",
+    "express": "4.13.x",
+    "request": "2.74.0"
+  },
+  "repository": {},
+  "engines": {
+    "node": "4.x"
+  }
+}
