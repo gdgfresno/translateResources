@@ -21,18 +21,18 @@ var app = express();
 app.use(express.static(__dirname + '/public'));
 
 app.get('/translate', function(req, res) {
-    var fs = require('fs');
-    var contentText = fs.readFileSync('resources.json', 'utf8');
+  var fs = require('fs');
+  var contentText = fs.readFileSync('resources.json', 'utf8');
 
-    var sourceLang = 'en';
-    var targetLang = req.query.lang;  // 'es', 'hmn'
-    var urlPrefix = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" 
-        + sourceLang + "&tl=" + targetLang + "&dt=t&q=";
+  var sourceLang = 'en';
+  var targetLang = req.query.lang;  // 'es', 'hmn'
+  var urlPrefix = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" 
+      + sourceLang + "&tl=" + targetLang + "&dt=t&q=";
 
-    var translated = {};
-    var contentJson = JSON.parse(contentText);
+  var translated = {};
+  var contentJson = JSON.parse(contentText);
 
-    async.eachSeries(Object.keys(contentJson),
+  async.eachSeries(Object.keys(contentJson),
       function (key, done) {  // iterator
         var options = {};
         request.get(urlPrefix + encodeURI(contentJson[key]), options, function(error, response, body) { 
@@ -41,7 +41,11 @@ app.get('/translate', function(req, res) {
             return;
           };
           var responseJson = JSON.parse(response.body.replace(/\,{2,}/gi, ','));
-          translated[key] = responseJson[0][0][0];
+          var translation = '';
+          responseJson[0].forEach(sentence_tuple => {
+            translation += sentence_tuple[0];
+          });
+          translated[key] = translation;
           done(null);
         });
       },
