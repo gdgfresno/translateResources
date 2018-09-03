@@ -1,0 +1,23 @@
+{
+    "App": {
+        "Title": "Valley Dev Fest 2018"
+    },
+    "Menu": {
+        "Home": "Home",
+        "Language": "Language",
+        "Speakers": "Speakers",
+        "Schedule": "Schedule",
+        "Sponsors": "Sponsors",
+        "Register": "Register",
+        "Login": "Login",
+        "Account": "Account",
+        "MyProfile": "My Profile",
+        "MySchedule": "My Schedule",
+        "Logout": "Logout"
+    },
+    "Languages": {
+        "en": "English",
+        "es": "Spanish"
+    }
+}
+
