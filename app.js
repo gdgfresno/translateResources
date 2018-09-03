@@ -20,44 +20,55 @@ var app = express();
 // serve the files out of ./public as our main files
 app.use(express.static(__dirname + '/public'));
 
-var options = {};
+var options = {
+  json : true,
+  headers: {
+    // 'Host': 'valleydevfest.com',
+    'Connection': 'keep-alive',
+    'Content-Length': '0',
+    'Cache-Control': 'max-age=0',
+    'Origin': 'https://translate.googleapis.com',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+    'Accept': 'application/json',
+    'Referer': 'https://translate.google.com',
+    'Accept-Language':'en-US,en;q=0.8,ru;q=0.6',
+  }
+};
 var sourceLang = 'en';
 var targetLang = '';
 var urlPrefix = ''
 var translated = {};
+var counter = 0;
 
-var delay = function(milliseconds) {
+var delay = function(fn, milliseconds) {
   if (!milliseconds)
-    milliseconds = Math.floor(Math.random() * 2000);
-  setTimeout(function() {}, milliseconds);
+    milliseconds = 1000 + Math.floor(Math.random() * 1000);
+  console.log(milliseconds);
+  setTimeout(fn, milliseconds);
 }
 
-var translatePart = function(contentPart, keyOuter) {
-  async.eachSeries(Object.keys(contentPart),
-    function (keyInner, doneInner) {  // iterator
-      delay();
-      request.get(urlPrefix + encodeURI(contentPart[keyInner]), options, function(error, response, body) { 
+var translatePart = function(contentPart, keyOuter, res) {
+  for (let keyInner in contentPart) {
+    if (contentPart.hasOwnProperty(keyInner)) {
+      delay(function() {
+        console.log(contentPart[keyInner]);
+        request.get(urlPrefix + encodeURI(contentPart[keyInner]), options, function(error, response, body) {
           if (error) {
-            res.send(error);
-            return;
-          };
-          console.log(response.body);
-          let responseJson = JSON.parse(response.body.replace(/\,{2,}/gi, ','));
-          let translation = '';
-          responseJson[0].forEach(sentence_tuple => {
-            translation += sentence_tuple[0];
-          });
-          translated[keyOuter][keyInner] = translation;
-          delay();
-          doneInner(null);
+            console.log(error);
+          } else {
+            let translation = '';
+            let translated_sentences = response.body[0];
+            for (let i = 0; i < translated_sentences.length; i++) {
+              translation += translated_sentences[i][0];
+            }
+            translated[keyOuter][keyInner] = translation;
+            counter++;
+          }
         });
-    },
-    function (err) {
-      // global callback for async.eachSeries
-      if (err) {
-        res.send(err);
-      }
-    });
+      });
+    }
+  }
 }
 
 app.get('/translate', function(req, res) {
@@ -71,22 +82,25 @@ app.get('/translate', function(req, res) {
 
   let contentJson = JSON.parse(contentText);
 
+  let timerThreshold = 0;
   for (let key in contentJson) {
     if (contentJson.hasOwnProperty(key)) {
       translated[key] = {};
-      translatePart(contentJson[key], key);
+      translatePart(contentJson[key], key, res);
+      timerThreshold += Object.keys(contentJson[key]).length;
     }
-    delay();
   }
 
-  let targetFileName = 'locale-' + targetLang + '.json';
-  fs.writeFile(targetFileName, JSON.stringify(translated, null, 2), function (err) {
-    if (err) {
-      res.send(err);
-    } else {
-      res.send(targetLang + ' translation: ' + targetFileName);
-    }
-  });
+  delay(function() {
+    let targetFileName = 'locale-' + targetLang + '.json';
+    fs.writeFile(targetFileName, JSON.stringify(translated, null, 2), function (err) {
+      if (err) {
+        res.send(err);
+      } else {
+        res.send(targetLang + ' translation: ' + targetFileName);
+      }
+    });
+  }, timerThreshold * 2000);
 });
 
 // Start server on the specified port and binding host
