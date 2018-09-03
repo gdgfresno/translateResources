@@ -32,25 +32,23 @@ var options = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
     'Accept': 'application/json',
     'Referer': 'https://translate.google.com',
-    'Accept-Language':'en-US,en;q=0.8,ru;q=0.6',
+    'Accept-Language': 'en-US,en;q=0.8,ru;q=0.6',
   }
 };
 var sourceLang = 'en';
 var targetLang = '';
 var urlPrefix = ''
 var translated = {};
-var counter = 0;
 
 var delay = function(fn, milliseconds) {
-  if (!milliseconds)
-    milliseconds = 1000 + Math.floor(Math.random() * 1000);
   console.log(milliseconds);
   setTimeout(fn, milliseconds);
 }
 
-var translatePart = function(contentPart, keyOuter, res) {
+var translatePart = function(contentPart, keyOuter, timerThreshold) {
   for (let keyInner in contentPart) {
     if (contentPart.hasOwnProperty(keyInner)) {
+      delayMs = Math.floor(Math.random() * timerThreshold);
       delay(function() {
         console.log(contentPart[keyInner]);
         request.get(urlPrefix + encodeURI(contentPart[keyInner]), options, function(error, response, body) {
@@ -63,10 +61,9 @@ var translatePart = function(contentPart, keyOuter, res) {
               translation += translated_sentences[i][0];
             }
             translated[keyOuter][keyInner] = translation;
-            counter++;
           }
         });
-      });
+      }, delayMs);
     }
   }
 }
@@ -85,9 +82,15 @@ app.get('/translate', function(req, res) {
   let timerThreshold = 0;
   for (let key in contentJson) {
     if (contentJson.hasOwnProperty(key)) {
-      translated[key] = {};
-      translatePart(contentJson[key], key, res);
       timerThreshold += Object.keys(contentJson[key]).length;
+    }
+  }
+  timerThreshold *= 1000;
+
+  for (let key in contentJson) {
+    if (contentJson.hasOwnProperty(key)) {
+      translated[key] = {};
+      translatePart(contentJson[key], key, timerThreshold);
     }
   }
 
@@ -100,7 +103,7 @@ app.get('/translate', function(req, res) {
         res.send(targetLang + ' translation: ' + targetFileName);
       }
     });
-  }, timerThreshold * 2000);
+  }, timerThreshold);
 });
 
 // Start server on the specified port and binding host
